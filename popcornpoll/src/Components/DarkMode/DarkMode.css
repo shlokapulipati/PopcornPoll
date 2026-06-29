@@ -1,6 +1,6 @@
 .dark_mode {
-    margin-top: -20px;
-    margin-left: 10px;
+    display: flex;
+    align-items: center;
 }
 
 .dark_mode_label {

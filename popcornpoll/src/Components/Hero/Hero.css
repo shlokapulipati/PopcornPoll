@@ -1,0 +1,199 @@
+.hero-section {
+  position: relative;
+  background: radial-gradient(circle at 80% 20%, rgba(255, 152, 0, 0.08) 0%, transparent 50%),
+              radial-gradient(circle at 10% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+  padding: 100px 0 60px 0;
+  overflow: hidden;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+@media (min-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 1.2fr 0.8fr;
+  }
+}
+
+.hero-content {
+  text-align: left;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 24px;
+}
+
+.hero-title {
+  font-size: 2.75rem;
+  line-height: 1.15;
+  color: var(--text-color);
+  margin-bottom: 20px;
+}
+
+@media (min-width: 768px) {
+  .hero-title {
+    font-size: 4rem;
+  }
+}
+
+.hero-title .highlight {
+  background: linear-gradient(135deg, var(--primary-color), #ffb300);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 580px;
+  margin-bottom: 36px;
+  line-height: 1.7;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.hero-btn {
+  padding: 14px 28px;
+  font-size: 1.05rem;
+}
+
+/* Mockups for Visual Representation */
+.hero-visual {
+  position: relative;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-mockup {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--shadow-lg);
+  position: absolute;
+  transition: transform 0.5s ease;
+}
+
+.main-mock {
+  width: 320px;
+  z-index: 2;
+  transform: rotate(-3deg) translate(-20px, 0);
+  animation: mockFloat 4s ease-in-out infinite alternate;
+}
+
+.side-mock {
+  width: 240px;
+  z-index: 1;
+  transform: rotate(6deg) translate(120px, -60px);
+  animation: mockFloat 4.5s ease-in-out infinite alternate-reverse;
+}
+
+.mock-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.mock-option {
+  position: relative;
+  padding: 10px 12px;
+  background: var(--input-bg);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.mock-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: var(--primary-glow);
+  z-index: -1;
+  border-radius: 8px 0 0 8px;
+  transition: width 1s ease;
+}
+
+.mock-percent {
+  color: var(--primary-color);
+}
+
+.mock-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.mock-badge {
+  display: inline-block;
+  background: var(--primary-glow);
+  color: var(--primary-color);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.side-mock h3 {
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+
+.side-mock p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+@keyframes mockFloat {
+  0% {
+    transform: rotate(-3deg) translate(-20px, 0px);
+  }
+  100% {
+    transform: rotate(-1deg) translate(-20px, -15px);
+  }
+}
+
+@keyframes mockFloat2 {
+  0% {
+    transform: rotate(6deg) translate(120px, -60px);
+  }
+  100% {
+    transform: rotate(4deg) translate(120px, -45px);
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-visual {
+    display: none;
+  }
+}
