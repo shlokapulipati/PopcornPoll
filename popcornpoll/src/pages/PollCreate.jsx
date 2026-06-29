@@ -7,7 +7,7 @@ import { searchTMDBMovies, fetchTMDBMovies, enrichMoviesWithOMDB } from "../util
 import { Skeleton } from "../Components/UI/UIComponents";
 
 const PollCreate = () => {
-  const { user } = useAuth();
+  const { user, loading, setAuthModalOpen } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
 
@@ -38,6 +38,8 @@ const PollCreate = () => {
 
   // Load movies from draft on mount
   useEffect(() => {
+    // If not loaded yet or not logged in, skip draft loading
+    if (loading || !user || user.isAnonymous) return;
     try {
       const draft = JSON.parse(sessionStorage.getItem("draft_poll_movies") || "[]");
       if (draft.length > 0) {
@@ -47,7 +49,7 @@ const PollCreate = () => {
     } catch (e) {
       console.warn("Failed to load draft movies", e);
     }
-  }, []);
+  }, [loading, user]);
 
   // Update creator name if user logs in
   useEffect(() => {
@@ -115,8 +117,6 @@ const PollCreate = () => {
     sessionStorage.setItem("draft_poll_movies", JSON.stringify(updated));
   };
 
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -161,6 +161,37 @@ const PollCreate = () => {
       showToast("Failed to create poll. Try again.", "error");
     }
   };
+
+  if (loading) {
+    return (
+      <div className="container section-padding" style={{ maxWidth: "700px", textAlign: "center" }}>
+        <div className="glass-panel" style={{ padding: "32px" }}>
+          <h2 style={{ color: "var(--text-color)" }}>Checking authentication...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || user.isAnonymous) {
+    return (
+      <div className="container section-padding" style={{ maxWidth: "700px", textAlign: "center" }}>
+        <div className="glass-panel" style={{ padding: "40px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
+          <h1 style={{ fontSize: "2.5rem", color: "var(--text-color)" }}>🔒 Sign In Required</h1>
+          <p style={{ color: "var(--text-muted)", maxWidth: "500px", fontSize: "1.1rem" }}>
+            To ensure high-quality polls and prevent spam, creating polls is restricted to registered members.
+          </p>
+          <button 
+            type="button"
+            onClick={() => setAuthModalOpen(true)} 
+            className="btn btn-primary"
+            style={{ padding: "12px 24px", fontSize: "1rem" }}
+          >
+            Sign In to Create a Poll
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container section-padding" style={{ maxWidth: "700px" }}>
