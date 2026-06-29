@@ -76,7 +76,7 @@ const Profile = () => {
   const username = isAnonymous ? "Anonymous User" : user.displayName;
   const avatarUrl = isAnonymous 
     ? `https://api.dicebear.com/7.x/bottts/svg?seed=${user.uid}` 
-    : user.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`;
+    : user.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${username}`;
 
   return (
     <div className="container section-padding" style={{ maxWidth: "900px" }}>

@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
         uid: `mock-email-user-${Math.random().toString(36).substring(2, 11)}`,
         displayName: username,
         email: email,
-        photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`,
+        photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${username}`,
         isAnonymous: false
       };
       localUsers.push({ email, password, displayName: username, uid: mockUser.uid });
@@ -232,7 +232,7 @@ export const AuthProvider = ({ children }) => {
         uid: found.uid,
         displayName: found.displayName,
         email: found.email,
-        photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${found.displayName}`,
+        photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${found.displayName}`,
         isAnonymous: false
       };
       localStorage.setItem("mock_user_session", JSON.stringify(mockUser));
