@@ -7,7 +7,8 @@ import {
   linkWithCredential,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  updateProfile
+  updateProfile,
+  sendEmailVerification
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, googleProvider, db } from "../firebase/config";
@@ -174,6 +175,11 @@ export const AuthProvider = ({ children }) => {
         ...result.user,
         displayName: username
       };
+      try {
+        await sendEmailVerification(result.user);
+      } catch (emailErr) {
+        console.warn("Failed to send verification email:", emailErr);
+      }
       setUser(updatedUser);
       createUserProfile(updatedUser);
       setLoading(false);
