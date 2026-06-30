@@ -47,7 +47,7 @@
 
 .poll-card-question {
   font-size: 1.2rem;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   color: var(--text-color);
 }
 
@@ -55,7 +55,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .poll-card-option-thumb {
@@ -70,8 +70,8 @@
 }
 
 .thumb-img {
-  width: 50px;
-  height: 75px;
+  width: 30px;
+  height: 45px;
   object-fit: cover;
   border-radius: 4px;
   margin-bottom: 8px;
@@ -79,8 +79,8 @@
 }
 
 .thumb-placeholder {
-  width: 50px;
-  height: 75px;
+  width: 30px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;

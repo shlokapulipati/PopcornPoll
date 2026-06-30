@@ -38,7 +38,7 @@ const Home = () => {
         {pollsLoading ? (
           <div className="grid-responsive">
             {[1, 2].map((n) => (
-              <div key={n} className="glass-panel" style={{ padding: "24px", height: "260px" }}>
+              <div key={n} className="glass-panel" style={{ padding: "24px", height: "180px" }}>
                 <Skeleton type="title" />
                 <Skeleton type="text" />
                 <Skeleton type="text" />

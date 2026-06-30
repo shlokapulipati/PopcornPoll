@@ -1,3 +1,5 @@
+import { safeJSONParse, safeJSONSet } from "./safeStorage";
+
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const OMDB_BASE_URL = "https://www.omdbapi.com";
 
@@ -12,7 +14,7 @@ const withSessionCache = async (cacheKey, fetchFn) => {
   try {
     const cachedData = sessionStorage.getItem(cacheKey);
     if (cachedData) {
-      return JSON.parse(cachedData);
+      return safeJSONParse(cacheKey, null, sessionStorage);
     }
   } catch (e) {
     console.warn("Session storage cache reading failed", e);
@@ -22,7 +24,7 @@ const withSessionCache = async (cacheKey, fetchFn) => {
   
   if (freshData) {
     try {
-      sessionStorage.setItem(cacheKey, JSON.stringify(freshData));
+      safeJSONSet(cacheKey, freshData, sessionStorage);
     } catch (e) {
       console.warn("Session storage caching failed", e);
     }
@@ -35,7 +37,7 @@ const withLocalCache = async (cacheKey, fetchFn) => {
   try {
     const cachedData = localStorage.getItem(cacheKey);
     if (cachedData) {
-      return JSON.parse(cachedData);
+      return safeJSONParse(cacheKey, null, localStorage);
     }
   } catch (e) {
     console.warn("Local storage cache reading failed", e);
@@ -195,4 +197,24 @@ export const enrichMoviesWithOMDB = async (tmdbMovies) => {
   }));
 
   return [...enriched, ...remaining];
+};
+
+/**
+ * Fetch detailed movie info including videos, watch providers, and similar movies
+ */
+export const fetchMovieDetails = async (id) => {
+  if (!id) return null;
+  const cacheKey = `tmdb_full_details_${id}`;
+  
+  return withSessionCache(cacheKey, async () => {
+    try {
+      const url = `${TMDB_BASE_URL}/movie/${id}?api_key=${TMDB_API_KEY}&append_to_response=videos,similar,watch/providers`;
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      return await response.json();
+    } catch (err) {
+      console.error("Error fetching detailed movie data:", err);
+      return null;
+    }
+  });
 };

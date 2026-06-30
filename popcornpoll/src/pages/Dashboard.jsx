@@ -89,7 +89,7 @@ const Dashboard = () => {
         label: "Votes by Genre",
         data: genreData.length > 0 ? genreData : [1],
         backgroundColor: [
-          "#ff9800",
+          "#64748b",
           "#3b82f6",
           "#10b981",
           "#ef4444",
@@ -110,8 +110,8 @@ const Dashboard = () => {
       {
         label: "Votes cast",
         data: stats.activityHistory.map(h => h.votes),
-        backgroundColor: "rgba(255, 152, 0, 0.75)",
-        borderColor: "#ff9800",
+        backgroundColor: "rgba(100, 116, 139, 0.75)",
+        borderColor: "#64748b",
         borderWidth: 1
       }
     ]
@@ -254,7 +254,7 @@ const Dashboard = () => {
                             <div style={{ 
                               width: `${pct}%`, 
                               height: "100%", 
-                              background: "linear-gradient(135deg, #ff9800, #f57c00)", 
+                              background: "linear-gradient(135deg, #64748b, #475569)", 
                               borderRadius: "4px",
                               transition: "width 0.4s ease"
                             }} />

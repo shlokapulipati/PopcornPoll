@@ -12,8 +12,8 @@ import {
   limit, 
   runTransaction,
   serverTimestamp 
-} from "firebase/firestore";
 import { db } from "../firebase/config";
+import { safeJSONParse, safeJSONSet } from "./safeStorage";
 
 // Generates a 6-character unique ID for short URL sharing
 const generateShortId = () => {
@@ -73,9 +73,9 @@ export const createPoll = async (pollData, creator) => {
 
   // Write to local storage fallback
   try {
-    const localPolls = JSON.parse(localStorage.getItem("local_polls") || "[]");
+    const localPolls = safeJSONParse("local_polls", []);
     localPolls.unshift(formattedPoll);
-    localStorage.setItem("local_polls", JSON.stringify(localPolls));
+    safeJSONSet("local_polls", localPolls);
   } catch (e) {
     console.error("Local storage poll save failed:", e);
   }
@@ -122,7 +122,7 @@ export const getPollDetails = async (pollId) => {
   }
   
   // Local storage fallback
-  const localPolls = JSON.parse(localStorage.getItem("local_polls") || "[]");
+  const localPolls = safeJSONParse("local_polls", []);
   const found = localPolls.find(p => p.id === pollId);
   return found || null;
 };
@@ -133,7 +133,7 @@ export const getPollDetails = async (pollId) => {
 export const voteOnPoll = async (pollId, optionId, userId) => {
   // Sync to local storage votes and local polls list
   try {
-    const localPolls = JSON.parse(localStorage.getItem("local_polls") || "[]");
+    const localPolls = safeJSONParse("local_polls", []);
     const idx = localPolls.findIndex(p => p.id === pollId);
     if (idx !== -1) {
       localPolls[idx].totalVotes = (localPolls[idx].totalVotes || 0) + 1;
@@ -141,14 +141,14 @@ export const voteOnPoll = async (pollId, optionId, userId) => {
       if (optIdx !== -1) {
         localPolls[idx].options[optIdx].votes = (localPolls[idx].options[optIdx].votes || 0) + 1;
       }
-      localStorage.setItem("local_polls", JSON.stringify(localPolls));
+      safeJSONSet("local_polls", localPolls);
     }
-    const localVotes = JSON.parse(localStorage.getItem("local_votes") || "{}");
+    const localVotes = safeJSONParse("local_votes", {});
     if (!localVotes[userId]) {
       localVotes[userId] = {};
     }
     localVotes[userId][pollId] = optionId;
-    localStorage.setItem("local_votes", JSON.stringify(localVotes));
+    safeJSONSet("local_votes", localVotes);
   } catch (e) {
     console.error("Local vote record error:", e);
   }
@@ -198,7 +198,7 @@ export const voteOnPoll = async (pollId, optionId, userId) => {
   } catch (err) {
     console.warn("Firestore vote transaction failed or timed out. Vote saved in local state.", err);
     // Get latest local state to return
-    const localPolls = JSON.parse(localStorage.getItem("local_polls") || "[]");
+    const localPolls = safeJSONParse("local_polls", []);
     const found = localPolls.find(p => p.id === pollId);
     if (found) {
       return { success: true, newOptions: found.options, newTotalVotes: found.totalVotes };
@@ -214,7 +214,7 @@ export const checkIfUserVoted = async (pollId, userId) => {
   if (!userId) return false;
   
   // Fast local storage vote check namespaced by userId first
-  const localVotes = JSON.parse(localStorage.getItem("local_votes") || "{}");
+  const localVotes = safeJSONParse("local_votes", {});
   if (localVotes[userId] && localVotes[userId][pollId]) {
     return localVotes[userId][pollId];
   }
@@ -256,7 +256,7 @@ export const fetchPolls = async (filterType = "recent", limitCount = 10) => {
     const querySnapshot = await withTimeout(getDocs(q), 1500, null);
     
     // Parse local polls list
-    const localPolls = JSON.parse(localStorage.getItem("local_polls") || "[]");
+    const localPolls = safeJSONParse("local_polls", []);
 
     if (!querySnapshot) {
       console.warn("Firestore fetchPolls timed out. Using local fallback.");
@@ -301,7 +301,7 @@ export const fetchPolls = async (filterType = "recent", limitCount = 10) => {
     return merged.slice(0, limitCount);
   } catch (err) {
     console.warn("Firestore fetchPolls failed, using local fallback:", err);
-    return JSON.parse(localStorage.getItem("local_polls") || "[]").slice(0, limitCount);
+    return safeJSONParse("local_polls", []).slice(0, limitCount);
   }
 };
 
@@ -370,9 +370,9 @@ export const updateUserVotedPoll = async (userId, pollId, optionId) => {
 export const deletePoll = async (pollId, userId) => {
   // 1. Remove from local storage
   try {
-    const localPolls = JSON.parse(localStorage.getItem("local_polls") || "[]");
+    const localPolls = safeJSONParse("local_polls", []);
     const updatedPolls = localPolls.filter(p => p.id !== pollId);
-    localStorage.setItem("local_polls", JSON.stringify(updatedPolls));
+    safeJSONSet("local_polls", updatedPolls);
   } catch (e) {
     console.error("Failed to delete poll from local storage", e);
   }
@@ -399,5 +399,54 @@ export const deletePoll = async (pollId, userId) => {
   } catch (err) {
     console.warn("Firestore delete failed or timed out. Removed from local storage only.", err);
     return true;
+  }
+};
+
+/**
+ * Adds or updates a user's review for a movie
+ */
+export const addMovieReview = async (movieId, reviewData) => {
+  if (!movieId || !reviewData.userId) return false;
+  const reviewId = `${movieId}_${reviewData.userId}`; // One review per user per movie
+  const docRef = doc(db, "movie_reviews", reviewId);
+  
+  try {
+    await withTimeout(setDoc(docRef, {
+      ...reviewData,
+      movieId: String(movieId),
+      createdAt: serverTimestamp()
+    }), 2000, null);
+    return true;
+  } catch (err) {
+    console.error("Failed to add movie review:", err);
+    return false;
+  }
+};
+
+/**
+ * Fetches all reviews for a specific movie
+ */
+export const fetchMovieReviews = async (movieId) => {
+  if (!movieId) return [];
+  const reviewsRef = collection(db, "movie_reviews");
+  const q = query(
+    reviewsRef, 
+    where("movieId", "==", String(movieId)), 
+    orderBy("createdAt", "desc"),
+    limit(20)
+  );
+  
+  try {
+    const querySnapshot = await withTimeout(getDocs(q), 1500, null);
+    if (!querySnapshot) return [];
+    
+    const reviews = [];
+    querySnapshot.forEach((doc) => {
+      reviews.push({ id: doc.id, ...doc.data() });
+    });
+    return reviews;
+  } catch (err) {
+    console.error("Failed to fetch movie reviews:", err);
+    return [];
   }
 };

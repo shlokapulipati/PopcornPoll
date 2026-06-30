@@ -19,7 +19,7 @@
 .movie-poster-container {
   position: relative;
   width: 100%;
-  padding-top: 145%; /* Standard poster ratio */
+  padding-top: 115%; /* Shorter poster ratio */
   background-color: var(--bg-alt);
   overflow: hidden;
 }
@@ -109,15 +109,7 @@
 }
 
 .movie-plot {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin-bottom: 16px;
-  flex-grow: 1;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  display: none;
 }
 
 .movie-card-actions {

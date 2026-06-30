@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { safeJSONParse } from "../../utils/safeStorage";
 import DarkMode from "../DarkMode/DarkMode";
 import logo from "../../assets/popcornpoll.png";
 import "./Navbar.css";
@@ -11,12 +12,8 @@ const Navbar = () => {
 
   // Read draft count from session storage
   const updateDraftCount = () => {
-    try {
-      const draft = JSON.parse(sessionStorage.getItem("draft_poll_movies") || "[]");
-      setDraftCount(draft.length);
-    } catch (e) {
-      setDraftCount(0);
-    }
+    const draft = safeJSONParse("draft_poll_movies", [], sessionStorage);
+    setDraftCount(draft.length);
   };
 
   useEffect(() => {

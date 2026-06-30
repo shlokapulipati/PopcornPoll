@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPoll } from "../utils/firebase";
 import { useAuth } from "../context/AuthContext";
+import { safeJSONParse, safeJSONSet } from "../utils/safeStorage";
 import { useToast } from "../context/ToastContext";
 import { searchTMDBMovies, fetchTMDBMovies, enrichMoviesWithOMDB } from "../utils/api";
 import { Skeleton } from "../Components/UI/UIComponents";
@@ -41,7 +42,7 @@ const PollCreate = () => {
     // If not loaded yet or not logged in, skip draft loading
     if (loading || !user || user.isAnonymous) return;
     try {
-      const draft = JSON.parse(sessionStorage.getItem("draft_poll_movies") || "[]");
+      const draft = safeJSONParse("draft_poll_movies", [], sessionStorage);
       if (draft.length > 0) {
         setSelectedMovies(draft);
         showToast(`Loaded ${draft.length} movies from your browse draft!`, "info");
@@ -114,7 +115,7 @@ const PollCreate = () => {
     const updated = selectedMovies.filter((m) => m.id !== movieId);
     setSelectedMovies(updated);
     // Keep session draft synchronized
-    sessionStorage.setItem("draft_poll_movies", JSON.stringify(updated));
+    safeJSONSet("draft_poll_movies", updated, sessionStorage);
   };
 
   const handleSubmit = async (e) => {

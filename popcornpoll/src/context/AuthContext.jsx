@@ -12,6 +12,7 @@ import {
 } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, googleProvider, db } from "../firebase/config";
+import { safeJSONParse, safeJSONSet } from "../utils/safeStorage";
 
 const AuthContext = createContext();
 
@@ -53,20 +54,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     // Check if there is a persistent mock user session first
-    const savedMock = localStorage.getItem("mock_user_session");
+    const savedMock = safeJSONParse("mock_auth_user", null);
     if (savedMock) {
-      try {
-        setUser(JSON.parse(savedMock));
-        setLoading(false);
-        return;
-      } catch (e) {
-        localStorage.removeItem("mock_user_session");
-      }
+      setUser(savedMock);
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       // If a mock session has been created, ignore Firebase auth changes
-      if (localStorage.getItem("mock_user_session")) {
+      if (localStorage.getItem("mock_auth_user")) {
         setLoading(false);
         return;
       }
@@ -109,7 +106,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
-      localStorage.removeItem("mock_user_session");
+      localStorage.removeItem("mock_auth_user");
       setUser(result.user);
       createUserProfile(result.user);
       return result.user;
@@ -123,7 +120,7 @@ export const AuthProvider = ({ children }) => {
         photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=popcornfan`,
         isAnonymous: false
       };
-      localStorage.setItem("mock_user_session", JSON.stringify(mockUser));
+      safeJSONSet("mock_auth_user", mockUser);
       setUser(mockUser);
       return mockUser;
     } finally {
@@ -136,12 +133,8 @@ export const AuthProvider = ({ children }) => {
   const signUpWithEmail = async (email, password, username) => {
     setLoading(true);
     // 1. Check local mock storage first to fail quickly
-    let localUsers = [];
-    try {
-      localUsers = JSON.parse(localStorage.getItem("mock_registered_users") || "[]");
-    } catch (e) {
-      localUsers = [];
-    }
+    let localUsers = safeJSONParse("mock_registered_users", []);
+    
     const existsLocally = localUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
     if (existsLocally) {
       setLoading(false);
@@ -200,8 +193,8 @@ export const AuthProvider = ({ children }) => {
         isAnonymous: false
       };
       localUsers.push({ email, password, displayName: username, uid: mockUser.uid });
-      localStorage.setItem("mock_registered_users", JSON.stringify(localUsers));
-      localStorage.setItem("mock_user_session", JSON.stringify(mockUser));
+      safeJSONSet("mock_registered_users", localUsers);
+      safeJSONSet("mock_auth_user", mockUser);
       setUser(mockUser);
       setLoading(false);
       return mockUser;
@@ -221,12 +214,8 @@ export const AuthProvider = ({ children }) => {
       return result.user;
     } catch (error) {
       console.warn("Firebase email signin failed, trying local mock storage fallback.", error);
-      let localUsers = [];
-      try {
-        localUsers = JSON.parse(localStorage.getItem("mock_registered_users") || "[]");
-      } catch (e) {
-        localUsers = [];
-      }
+      let localUsers = safeJSONParse("mock_registered_users", []);
+      
       const found = localUsers.find(
         u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
       );
@@ -241,7 +230,7 @@ export const AuthProvider = ({ children }) => {
         photoURL: `https://api.dicebear.com/7.x/initials/svg?seed=${found.displayName}`,
         isAnonymous: false
       };
-      localStorage.setItem("mock_user_session", JSON.stringify(mockUser));
+      safeJSONSet("mock_auth_user", mockUser);
       setUser(mockUser);
       setLoading(false);
       return mockUser;
