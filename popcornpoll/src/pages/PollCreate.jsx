@@ -4,8 +4,8 @@ import { createPoll } from "../utils/firebase";
 import { useAuth } from "../context/AuthContext";
 import { safeJSONParse, safeJSONSet } from "../utils/safeStorage";
 import { useToast } from "../context/ToastContext";
-import { searchTMDBMovies, fetchTMDBMovies, enrichMoviesWithOMDB } from "../utils/api";
-import { Skeleton } from "../Components/UI/UIComponents";
+import { searchTMDBMovies } from "../utils/api";
+import { Button } from "@/components/ui/button";
 
 const PollCreate = () => {
   const { user, loading, setAuthModalOpen } = useAuth();
@@ -28,7 +28,6 @@ const PollCreate = () => {
   const [customExpiry, setCustomExpiry] = useState(getDefaultExpiryString(24));
   const [selectedMovies, setSelectedMovies] = useState([]);
   
-  // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -37,9 +36,7 @@ const PollCreate = () => {
   const searchRef = useRef(null);
   const debounceTimer = useRef(null);
 
-  // Load movies from draft on mount
   useEffect(() => {
-    // If not loaded yet or not logged in, skip draft loading
     if (loading || !user || user.isAnonymous) return;
     try {
       const draft = safeJSONParse("draft_poll_movies", [], sessionStorage);
@@ -52,14 +49,12 @@ const PollCreate = () => {
     }
   }, [loading, user]);
 
-  // Update creator name if user logs in
   useEffect(() => {
     if (user && !user.isAnonymous) {
       setCreatorName(user.displayName);
     }
   }, [user]);
 
-  // Click outside search listener
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -70,7 +65,6 @@ const PollCreate = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Search input handler
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
@@ -114,7 +108,6 @@ const PollCreate = () => {
   const removeMovie = (movieId) => {
     const updated = selectedMovies.filter((m) => m.id !== movieId);
     setSelectedMovies(updated);
-    // Keep session draft synchronized
     safeJSONSet("draft_poll_movies", updated, sessionStorage);
   };
 
@@ -126,7 +119,6 @@ const PollCreate = () => {
       return;
     }
 
-    // Determine Expiration Date
     let expiryDate = null;
     if (expiryType !== "never") {
       const now = new Date();
@@ -151,7 +143,6 @@ const PollCreate = () => {
         expiresAt: expiryDate
       }, user);
 
-      // Clear draft storage
       sessionStorage.removeItem("draft_poll_movies");
       window.dispatchEvent(new Event("draftPollUpdated"));
 
@@ -165,69 +156,61 @@ const PollCreate = () => {
 
   if (loading) {
     return (
-      <div className="container section-padding" style={{ maxWidth: "700px", textAlign: "center" }}>
-        <div className="glass-panel" style={{ padding: "32px" }}>
-          <h2 style={{ color: "var(--text-color)" }}>Checking authentication...</h2>
-        </div>
+      <div className="flex justify-center items-center min-h-[60vh] bg-[#a6f3ff]">
+        <h2 className="text-3xl font-bold text-slate-800 animate-pulse">Checking authentication...</h2>
       </div>
     );
   }
 
   if (!user || user.isAnonymous) {
     return (
-      <div className="container section-padding" style={{ maxWidth: "700px", textAlign: "center" }}>
-        <div className="glass-panel" style={{ padding: "40px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
-          <h1 style={{ fontSize: "2.5rem", color: "var(--text-color)" }}>🔒 Sign In Required</h1>
-          <p style={{ color: "var(--text-muted)", maxWidth: "500px", fontSize: "1.1rem" }}>
+      <div className="min-h-screen bg-[#a6f3ff] flex items-center justify-center p-6">
+        <div className="bg-white/90 backdrop-blur-xl p-12 max-w-2xl w-full rounded-[2rem] shadow-2xl border border-white text-center flex flex-col items-center gap-8">
+          <h1 className="text-5xl font-black text-slate-900 tracking-tighter">Sign In Required</h1>
+          <p className="text-xl font-medium text-slate-600 max-w-lg">
             To ensure high-quality polls and prevent spam, creating polls is restricted to registered members.
           </p>
-          <button 
-            type="button"
-            onClick={() => setAuthModalOpen(true)} 
-            className="btn btn-primary"
-            style={{ padding: "12px 24px", fontSize: "1rem" }}
+          <Button 
+            size="lg"
+            onClick={() => setAuthModalOpen(true)}
+            className="h-16 px-10 rounded-full bg-black text-white hover:bg-slate-800 text-xl font-bold shadow-xl"
           >
             Sign In to Create a Poll
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container section-padding" style={{ maxWidth: "700px" }}>
-      <div className="glass-panel" style={{ padding: "32px" }}>
-        <h1 style={{ fontSize: "2rem", marginBottom: "8px", textAlign: "center" }}>⚡ Create a Poll</h1>
-        <p style={{ color: "var(--text-muted)", textAlign: "center", marginBottom: "32px" }}>
-          Fill in the details below to create a real-time, shareable movie poll.
+    <div className="min-h-screen bg-[#a6f3ff] py-16 px-6 relative overflow-hidden flex justify-center items-start">
+      {/* Decorative background shapes */}
+      <div className="absolute top-20 left-[10%] rotate-12 w-32 h-12 bg-[#ffea2a] rounded-full hidden md:block opacity-70 border border-black/10" />
+      <div className="absolute top-[40%] right-[10%] rotate-[-15deg] w-48 h-16 bg-[#b268f7] rounded-full hidden xl:block opacity-70 border border-black/10" />
+
+      <div className="bg-white/95 backdrop-blur-xl p-10 md:p-14 max-w-3xl w-full rounded-[2rem] shadow-2xl border border-white relative z-10 flex flex-col items-center">
+        <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight text-center mb-4">Create a Poll</h1>
+        <p className="text-lg text-slate-500 font-medium text-center mb-10 w-full max-w-lg">
+          Fill in the details below to create a real-time, shareable movie poll for your community.
         </p>
 
-
-
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-8 w-full max-w-2xl">
           {/* Question Input */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label style={{ fontSize: "0.9rem", fontWeight: 700 }}>Poll Question / Title</label>
+          <div className="flex flex-col gap-3">
+            <label className="text-base font-black text-slate-800 uppercase tracking-widest">Poll Question / Title</label>
             <input
               type="text"
               required
-              placeholder="e.g. Which movie should we watch? 🍿"
+              placeholder="e.g. Which movie should we watch tonight?"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                background: "var(--input-bg)",
-                color: "var(--text-color)",
-                fontSize: "1rem"
-              }}
+              className="h-16 px-6 text-lg rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] focus:bg-white transition-colors"
             />
           </div>
 
           {/* Nickname Input */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <label style={{ fontSize: "0.9rem", fontWeight: 700 }}>Creator Nickname</label>
+          <div className="flex flex-col gap-3">
+            <label className="text-base font-black text-slate-800 uppercase tracking-widest">Creator Nickname</label>
             <input
               type="text"
               required
@@ -237,21 +220,14 @@ const PollCreate = () => {
                 setCreatorName(e.target.value);
                 localStorage.setItem("voter_nickname", e.target.value);
               }}
-              style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                background: "var(--input-bg)",
-                color: "var(--text-color)",
-                fontSize: "1rem"
-              }}
+              className="h-16 px-6 text-lg rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] focus:bg-white transition-colors"
             />
           </div>
 
           {/* Movie Autocomplete search to add options */}
-          <div ref={searchRef} style={{ display: "flex", flexDirection: "column", gap: "8px", position: "relative" }}>
-            <label style={{ fontSize: "0.9rem", fontWeight: 700 }}>
-              Search & Add Movies/TV Shows ({selectedMovies.length}/8)
+          <div ref={searchRef} className="flex flex-col gap-3 relative">
+            <label className="text-base font-black text-slate-800 uppercase tracking-widest">
+              Search & Add Options <span className="text-[#b268f7]">({selectedMovies.length}/8)</span>
             </label>
             <input
               type="text"
@@ -261,47 +237,22 @@ const PollCreate = () => {
                 setSearchQuery(e.target.value);
                 setShowSuggestions(true);
               }}
-              style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--border-color)",
-                background: "var(--input-bg)",
-                color: "var(--text-color)",
-                fontSize: "1rem"
-              }}
               onFocus={() => setShowSuggestions(true)}
+              className="h-16 px-6 text-lg rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] focus:bg-white transition-colors"
             />
+            
             {showSuggestions && (searchLoading || searchSuggestions.length > 0) && (
-              <div 
-                className="glass-panel" 
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  right: 0,
-                  zIndex: 10,
-                  borderRadius: "8px",
-                  overflow: "hidden",
-                  marginTop: "4px"
-                }}
-              >
+              <div className="absolute top-[105%] left-0 right-0 z-50 bg-white border-2 border-slate-100 rounded-2xl shadow-xl overflow-hidden shadow-black/5 py-2">
                 {searchLoading ? (
-                  <div style={{ padding: "16px", textAlign: "center" }}>Searching...</div>
+                  <div className="p-4 text-center font-bold text-slate-400">Searching...</div>
                 ) : (
                   searchSuggestions.map((movie) => (
                     <div
                       key={movie.id}
                       onClick={() => addMovie(movie)}
-                      style={{
-                        padding: "12px 16px",
-                        cursor: "pointer",
-                        borderBottom: "1px solid var(--border-color)",
-                        display: "flex",
-                        justifyContent: "space-between"
-                      }}
-                      className="suggestion-item"
+                      className="px-6 py-4 cursor-pointer hover:bg-[#a6f3ff]/20 font-semibold border-b border-slate-50 last:border-0 transition-colors"
                     >
-                      <span>{movie.title} ({(movie.release_date || "").substring(0, 4)})</span>
+                      <span>{movie.title} <span className="text-slate-400">({(movie.release_date || "").substring(0, 4)})</span></span>
                     </div>
                   ))
                 )}
@@ -311,37 +262,24 @@ const PollCreate = () => {
 
           {/* Selected Movies Preview List */}
           {selectedMovies.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)" }}>
-                POLL OPTIONS LIST
+            <div className="flex flex-col gap-3 pt-4 border-t-2 border-slate-100 mt-4">
+              <label className="text-base font-black text-slate-800 uppercase tracking-widest">
+                Poll Options Confirmed
               </label>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div className="flex flex-col gap-3">
                 {selectedMovies.map((movie, idx) => (
                   <div 
                     key={movie.id} 
-                    className="align_center" 
-                    style={{
-                      justifyContent: "space-between",
-                      padding: "10px 16px",
-                      background: "var(--input-bg)",
-                      border: "1px solid var(--border-color)",
-                      borderRadius: "8px"
-                    }}
+                    className="flex justify-between items-center p-4 bg-slate-50 border-2 border-slate-200 rounded-2xl group hover:border-[#00c9ea] transition-colors"
                   >
-                    <div className="align_center" style={{ gap: "12px" }}>
-                      <span style={{ fontWeight: 700, color: "var(--primary-color)" }}>#{idx + 1}</span>
-                      <span>{movie.title || movie.original_title} ({(movie.release_date || "").substring(0, 4)})</span>
+                    <div className="flex items-center gap-4 text-lg font-bold">
+                      <span className="text-xl font-black text-[#00c9ea] opacity-80">#{idx + 1}</span>
+                      <span className="text-slate-900">{movie.title || movie.original_title} <span className="text-slate-500 font-medium">({(movie.release_date || "").substring(0, 4)})</span></span>
                     </div>
                     <button 
                       type="button" 
                       onClick={() => removeMovie(movie.id)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--danger-color)",
-                        cursor: "pointer",
-                        fontSize: "1.2rem"
-                      }}
+                      className="text-2xl text-slate-400 hover:text-red-500 hover:bg-red-50 w-10 h-10 flex items-center justify-center rounded-full transition-colors"
                     >
                       &times;
                     </button>
@@ -352,55 +290,43 @@ const PollCreate = () => {
           )}
 
           {/* Expiration Settings */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label style={{ fontSize: "0.9rem", fontWeight: 700 }}>Poll Duration</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-4">
+            <div className="flex flex-col gap-3">
+              <label className="text-base font-black text-slate-800 uppercase tracking-widest">Duration</label>
               <select
                 value={expiryType}
                 onChange={(e) => setExpiryType(e.target.value)}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  background: "var(--input-bg)",
-                  border: "1px solid var(--border-color)",
-                  color: "var(--text-color)"
-                }}
+                className="h-16 px-5 text-lg rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] font-semibold transition-colors"
               >
-                <option value="1h">1 Hour</option>
-                <option value="24h">24 Hours</option>
-                <option value="7d">7 Days</option>
+                <option value="1h">1 Hour (Quick)</option>
+                <option value="24h">24 Hours (Standard)</option>
+                <option value="7d">7 Days (Long)</option>
                 <option value="never">Never Expires</option>
                 <option value="custom">Custom Date</option>
               </select>
             </div>
 
             {expiryType === "custom" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label style={{ fontSize: "0.9rem", fontWeight: 700 }}>Custom Deadline</label>
+              <div className="flex flex-col gap-3">
+                <label className="text-base font-black text-slate-800 uppercase tracking-widest">Custom Deadline</label>
                 <input
                   type="datetime-local"
                   required
                   value={customExpiry}
                   onChange={(e) => setCustomExpiry(e.target.value)}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: "8px",
-                    background: "var(--input-bg)",
-                    border: "1px solid var(--border-color)",
-                    color: "var(--text-color)"
-                  }}
+                  className="h-16 px-5 text-lg rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] font-semibold transition-colors"
                 />
               </div>
             )}
           </div>
 
-          <button 
+          <Button 
             type="submit" 
-            className="btn btn-primary"
-            style={{ padding: "14px", fontSize: "1rem", marginTop: "12px" }}
+            size="lg"
+            className="w-full h-20 text-2xl font-black bg-black text-white hover:bg-slate-800 rounded-2xl shadow-xl mt-6 transition-transform hover:scale-[1.02]"
           >
             🚀 Publish Poll
-          </button>
+          </Button>
         </form>
       </div>
     </div>

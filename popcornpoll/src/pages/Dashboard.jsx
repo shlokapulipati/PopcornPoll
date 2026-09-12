@@ -13,11 +13,11 @@ import {
 import { Bar, Doughnut } from "react-chartjs-2";
 import { fetchPolls, fetchUserCreatedPolls } from "../utils/firebase";
 import { calculateAnalytics } from "../utils/analytics";
-import { Skeleton } from "../Components/UI/UIComponents";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "../context/AuthContext";
 import { isExpired } from "../utils/helpers";
+import { Button } from "@/components/ui/button";
 
-// Register Chart.js components
 ChartJS.register(
   ArcElement, 
   BarElement, 
@@ -46,8 +46,20 @@ const Dashboard = () => {
         setLoading(true);
         setLoadingUserPolls(true);
         const polls = await fetchUserCreatedPolls(user.uid);
-        setUserPolls(polls);
-        const calculated = calculateAnalytics(polls);
+        
+        // Deduplicate duplicate questions inside dashboard to avoid redundant stats/bars
+        const uniquePolls = [];
+        const seenQuestions = new Set();
+        for (const p of polls) {
+          const lowerQuestion = (p.question || "").toLowerCase().trim();
+          if (!seenQuestions.has(lowerQuestion)) {
+            seenQuestions.add(lowerQuestion);
+            uniquePolls.push(p);
+          }
+        }
+
+        setUserPolls(uniquePolls);
+        const calculated = calculateAnalytics(uniquePolls);
         setStats(calculated);
       } catch (err) {
         console.error("Failed to load dashboard metrics", err);
@@ -68,17 +80,18 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="container section-padding">
-        <Skeleton type="title" />
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "30px" }}>
-          <Skeleton type="poster" />
-          <Skeleton type="poster" />
+      <div className="min-h-screen bg-[#a6f3ff] py-16 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col gap-8">
+          <Skeleton className="h-16 w-3/4 mx-auto bg-white/40 rounded-2xl" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Skeleton className="h-64 w-full bg-white/40 rounded-[2rem]" />
+            <Skeleton className="h-64 w-full bg-white/40 rounded-[2rem]" />
+          </div>
         </div>
       </div>
     );
   }
 
-  // Genre distribution chart configurations
   const genreLabels = Object.keys(stats.genreDistribution || {});
   const genreData = Object.values(stats.genreDistribution || {});
 
@@ -103,7 +116,6 @@ const Dashboard = () => {
     ]
   };
 
-  // Activity over time chart configurations
   const barData = {
     labels: stats.activityHistory.map(h => h.date),
     datasets: [
@@ -118,172 +130,154 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="container section-padding">
-      <header style={{ marginBottom: "40px" }}>
-        <h1 style={{ fontSize: "2.5rem", marginBottom: "8px" }}>📊 Analytics & Insights</h1>
-        <p style={{ color: "var(--text-muted)" }}>
-          Real-time metrics, genre trends, and voting activities across all PopcornPolls.
-        </p>
-      </header>
+    <div className="min-h-screen bg-[#a6f3ff] py-16 px-6 relative overflow-hidden">
+      {/* Decorative background shapes */}
+      <div className="absolute top-10 left-[10%] rotate-[15deg] w-32 h-16 bg-[#ffea2a] rounded-full hidden md:block opacity-70 border border-black/10 mix-blend-multiply" />
+      <div className="absolute top-[40%] right-[5%] w-48 h-48 bg-[#b268f7] rounded-full hidden xl:block opacity-50 border border-black/10 mix-blend-multiply" />
+      
+      <div className="max-w-7xl mx-auto relative z-10">
+        <header className="text-center mb-16">
+          <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter mb-4">Analytics & Insights</h1>
+          <p className="text-xl text-slate-600 font-medium max-w-2xl mx-auto">
+            Real-time metrics, genre trends, and voting activities across all your PopcornPolls.
+          </p>
+        </header>
 
-      {/* Metrics Top Row */}
-      <div 
-        style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", 
-          gap: "24px",
-          marginBottom: "40px"
-        }}
-      >
-        <div className="glass-panel" style={{ padding: "24px" }}>
-          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)", display: "block" }}>TOTAL POLLS CREATED</span>
-          <span style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--primary-color)" }}>{stats.totalPolls}</span>
-        </div>
-
-        <div className="glass-panel" style={{ padding: "24px" }}>
-          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)", display: "block" }}>TOTAL VOTES CAST</span>
-          <span style={{ fontSize: "2.5rem", fontWeight: 800, color: "var(--primary-color)" }}>{stats.totalVotes}</span>
-        </div>
-
-        {stats.mostVotedPoll && (
-          <div className="glass-panel" style={{ padding: "24px" }}>
-            <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)", display: "block" }}>MOST POPULAR POLL</span>
-            <Link 
-              to={`/poll/${stats.mostVotedPoll.id}`} 
-              style={{ fontSize: "1.1rem", fontWeight: 700, display: "block", marginTop: "8px", color: "var(--text-color)" }}
-            >
-              {stats.mostVotedPoll.question.slice(0, 40)}...
-            </Link>
-            <span style={{ fontSize: "0.85rem", color: "var(--primary-color)" }}>🔥 {stats.mostVotedPoll.totalVotes} votes</span>
+        {/* Metrics Top Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div className="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-white text-center flex flex-col items-center justify-center min-h-[200px] hover:-translate-y-2 transition-transform duration-300">
+            <span className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Total Polls Created</span>
+            <span className="text-6xl font-black text-slate-900">{stats.totalPolls}</span>
           </div>
-        )}
-      </div>
 
-      {/* Charts Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "32px" }}>
-        {/* Doughnut distribution */}
-        <div className="glass-panel" style={{ padding: "32px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          <h3 style={{ marginBottom: "20px", alignSelf: "flex-start" }}>🎭 Vote Distribution by Genre</h3>
-          <div style={{ position: "relative", width: "100%", maxWidth: "340px", height: "340px" }}>
-            <Doughnut 
-              data={doughnutData} 
-              options={{ 
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: "bottom",
-                    labels: { color: "rgba(150, 150, 150, 0.9)" }
+          <div className="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-white text-center flex flex-col items-center justify-center min-h-[200px] hover:-translate-y-2 transition-transform duration-300">
+            <span className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Total Votes Cast</span>
+            <span className="text-6xl font-black text-slate-900">{stats.totalVotes}</span>
+          </div>
+
+          {stats.mostVotedPoll ? (
+            <div className="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-white flex flex-col justify-center min-h-[200px] border-l-[12px] border-l-[#00c9ea] hover:-translate-y-2 transition-transform duration-300">
+              <span className="text-sm font-black text-slate-400 uppercase tracking-widest mb-2">Most Popular Poll</span>
+              <Link 
+                to={`/poll/${stats.mostVotedPoll.id}`} 
+                className="text-2xl font-bold text-slate-900 hover:text-[#00c9ea] transition-colors leading-tight mb-4"
+              >
+                {stats.mostVotedPoll.question.length > 50 ? `${stats.mostVotedPoll.question.slice(0, 50)}...` : stats.mostVotedPoll.question}
+              </Link>
+              <span className="text-lg font-black text-[#00c9ea]">{stats.mostVotedPoll.totalVotes} votes</span>
+            </div>
+          ) : (
+             <div className="bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-white flex flex-col items-center justify-center min-h-[200px] opacity-70">
+              <span className="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Most Popular Poll</span>
+              <span className="text-xl font-bold text-slate-300">No polls yet</span>
+            </div>
+          )}
+        </div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 gap-12 mb-16">
+          {/* Doughnut distribution */}
+          <div className="bg-white/95 backdrop-blur-xl p-10 rounded-[2rem] shadow-xl border border-white flex flex-col items-center">
+            <h3 className="text-3xl font-black text-slate-900 mb-8 self-start w-full text-center md:text-left">Vote Distribution by Genre</h3>
+            <div className="relative w-full max-w-[400px] aspect-square">
+              <Doughnut 
+                data={doughnutData} 
+                options={{ 
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "bottom",
+                      labels: { padding: 20, font: { weight: "bold", size: 14 } }
+                    }
                   }
-                }
-              }} 
-            />
+                }} 
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* My Polls Section */}
-      <div className="glass-panel" style={{ marginTop: "40px", padding: "32px" }}>
-        <h2 style={{ fontSize: "1.5rem", marginBottom: "24px", display: "flex", alignItems: "center", gap: "10px" }}>
-          📋 My Created Polls & Live Results
-        </h2>
-        
-        {loadingUserPolls ? (
-          <div>
-            <Skeleton type="title" />
-            <Skeleton type="text" />
-          </div>
-        ) : userPolls.length > 0 ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            {userPolls.map((poll) => {
-              const expired = isExpired(poll.expiresAt);
-              return (
-                <div 
-                  key={poll.id} 
-                  className="glass-panel" 
-                  style={{ 
-                    padding: "24px", 
-                    border: "1px solid var(--border-color)", 
-                    borderRadius: "12px",
-                    background: "rgba(255, 255, 255, 0.02)" 
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px", flexWrap: "wrap", gap: "10px" }}>
-                    <div>
-                      <h3 style={{ fontSize: "1.2rem", fontWeight: 700, margin: 0 }}>
-                        {poll.question}
-                      </h3>
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                        Created on {new Date(poll.createdAt).toLocaleDateString()}
+        {/* My Polls Section */}
+        <div className="bg-white/95 backdrop-blur-xl p-8 md:p-12 rounded-[2rem] shadow-xl border border-white">
+          <h2 className="text-3xl md:text-4xl font-black text-slate-900 mb-10 flex items-center gap-4">
+            My Created Polls & Live Results
+          </h2>
+          
+          {loadingUserPolls ? (
+            <div className="flex flex-col gap-6">
+              <Skeleton className="h-40 w-full bg-slate-100 rounded-2xl" />
+              <Skeleton className="h-40 w-full bg-slate-100 rounded-2xl" />
+            </div>
+          ) : userPolls.length > 0 ? (
+            <div className="flex flex-col gap-8">
+              {userPolls.map((poll) => {
+                const expired = isExpired(poll.expiresAt);
+                return (
+                  <div 
+                    key={poll.id} 
+                    className="p-8 border-4 border-slate-100 rounded-3xl bg-slate-50 hover:bg-white hover:border-[#00c9ea] hover:shadow-[0_8px_30px_rgb(0,201,234,0.12)] transition-all duration-300"
+                  >
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4 border-b-2 border-slate-200 pb-6">
+                      <div>
+                        <h3 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight mb-2">
+                          {poll.question}
+                        </h3>
+                        <span className="text-base font-medium text-slate-500 uppercase tracking-widest">
+                          Created {new Date(poll.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <span className={`px-4 py-2 rounded-full text-sm font-black uppercase tracking-widest shrink-0 ${expired ? "bg-red-100 text-red-600" : "bg-[#00c9ea]/20 text-[#00c9ea]"}`}>
+                        {expired ? "Closed" : "Live"}
                       </span>
                     </div>
-                    <span 
-                      className={`poll-status-badge ${expired ? "expired" : "active"}`}
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: "20px",
-                        fontSize: "0.75rem",
-                        fontWeight: 700,
-                        backgroundColor: expired ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)",
-                        color: expired ? "#ef4444" : "#10b981",
-                        border: expired ? "1px solid rgba(239, 68, 68, 0.2)" : "1px solid rgba(16, 185, 129, 0.2)"
-                      }}
-                    >
-                      {expired ? "Closed" : "Active"}
-                    </span>
-                  </div>
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "16px" }}>
-                    {poll.options.map((opt) => {
-                      const pct = poll.totalVotes > 0 ? ((opt.votes / poll.totalVotes) * 100).toFixed(1) : 0;
-                      return (
-                        <div key={opt.id} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem" }}>
-                            <span style={{ fontWeight: 600 }}>{opt.title}</span>
-                            <span style={{ color: "var(--primary-color)" }}>
-                              <strong>{pct}%</strong> ({opt.votes || 0} votes)
-                            </span>
+                    <div className="flex flex-col gap-6 mb-8">
+                      {poll.options.map((opt) => {
+                        const pct = poll.totalVotes > 0 ? ((opt.votes / poll.totalVotes) * 100).toFixed(1) : 0;
+                        return (
+                          <div key={opt.id} className="flex flex-col gap-2 relative">
+                            <div className="flex justify-between items-end">
+                              <span className="text-lg font-bold text-slate-900 z-10">{opt.title}</span>
+                              <span className="text-lg font-black text-slate-900 z-10">
+                                {pct}% <span className="text-sm text-slate-500 font-medium">({opt.votes || 0})</span>
+                              </span>
+                            </div>
+                            <div className="w-full h-4 bg-slate-200 rounded-full overflow-hidden">
+                              <div className="h-full bg-slate-900 transition-all duration-1000 ease-out" style={{ width: `${pct}%` }} />
+                            </div>
                           </div>
-                          <div style={{ 
-                            width: "100%", 
-                            height: "8px", 
-                            background: "rgba(255, 255, 255, 0.05)", 
-                            borderRadius: "4px",
-                            overflow: "hidden"
-                          }}>
-                            <div style={{ 
-                              width: `${pct}%`, 
-                              height: "100%", 
-                              background: "linear-gradient(135deg, #64748b, #475569)", 
-                              borderRadius: "4px",
-                              transition: "width 0.4s ease"
-                            }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
 
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                      Total Votes Cast: <strong>{poll.totalVotes || 0}</strong>
-                    </span>
-                    <Link to={`/poll/${poll.id}`} className="btn btn-secondary btn-sm">
-                      🔍 View Poll & Vote Details
-                    </Link>
+                    <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-xl border-2 border-slate-100 gap-4">
+                      <span className="text-lg font-medium text-slate-500">
+                        Total Votes: <strong className="font-black text-2xl text-slate-900 ml-2">{poll.totalVotes || 0}</strong>
+                      </span>
+                      <Link to={`/poll/${poll.id}`}>
+                        <Button 
+                          size="lg"
+                          className="h-12 px-6 rounded-full font-bold shadow-md bg-[#00c9ea] text-slate-900 hover:bg-slate-900 hover:text-white transition-all"
+                        >
+                          View Details
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div style={{ textAlign: "center", padding: "24px", color: "var(--text-muted)" }}>
-            <p>You haven't created any polls yet.</p>
-            <Link to="/poll/create" className="btn btn-primary btn-sm" style={{ marginTop: "12px" }}>
-              ⚡ Create Your First Poll
-            </Link>
-          </div>
-        )}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-16 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-300 flex flex-col items-center">
+              <p className="text-xl font-medium text-slate-500 mb-6">You haven't created any polls yet.</p>
+              <Link to="/poll/create">
+                <Button size="lg" className="h-16 px-10 rounded-full bg-black text-white hover:bg-slate-800 text-xl font-bold shadow-xl">
+                  Create Your First Poll
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

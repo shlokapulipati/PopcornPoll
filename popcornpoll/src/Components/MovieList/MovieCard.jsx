@@ -2,8 +2,7 @@ import React from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { safeJSONParse, safeJSONSet } from "../../utils/safeStorage";
 import { useToast } from "../../context/ToastContext";
-import Star from "../../assets/star.png";
-import "./MovieCard.css";
+import { Button } from "@/components/ui/button";
 
 const MovieCard = ({ movie }) => {
   const navigate = useNavigate();
@@ -13,7 +12,6 @@ const MovieCard = ({ movie }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Save as draft and redirect to create page
     sessionStorage.setItem("draft_poll_movies", JSON.stringify([movie]));
     navigate("/poll/create");
     showToast(`Started a poll draft with "${movie.title || movie.original_title}"`, "success");
@@ -39,7 +37,6 @@ const MovieCard = ({ movie }) => {
       const updatedDraft = [...draft, movie];
       safeJSONSet("draft_poll_movies", updatedDraft, sessionStorage);
       
-      // Dispatch custom event to let Navbar know
       window.dispatchEvent(new Event("draftPollUpdated"));
       showToast(`Added "${movie.title || movie.original_title}" to poll draft (${updatedDraft.length}/8)`, "success");
     } catch (err) {
@@ -49,8 +46,8 @@ const MovieCard = ({ movie }) => {
   };
 
   const posterUrl = movie.poster_path 
-    ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
-    : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=300&q=80";
+    ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+    : "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=500&q=80";
 
   const releaseYear = movie.release_date 
     ? movie.release_date.substring(0, 4) 
@@ -60,74 +57,58 @@ const MovieCard = ({ movie }) => {
     ? parseFloat(movie.imdbRating).toFixed(1) 
     : (movie.vote_average ? movie.vote_average.toFixed(1) : "0.0");
 
-  const imdbUrl = movie.imdbID 
-    ? `https://www.imdb.com/title/${movie.imdbID}/`
-    : `https://www.imdb.com/find?q=${encodeURIComponent(movie.title || movie.original_title)}`;
-
   return (
-    <div className="movie-card glass-panel">
+    <div className="group relative flex flex-col transition-all duration-300">
       <Link 
         to={`/movie/${movie.id}`}
-        className="movie-card-link-wrapper"
-        style={{ display: "flex", flexDirection: "column", flexGrow: 1, textDecoration: "none", color: "inherit" }}
+        className="flex flex-col flex-grow focus:outline-none"
       >
-        <div className="movie-poster-container">
+        <div className="relative aspect-[2/3] w-full rounded-2xl overflow-hidden mb-3 shadow-[0_4px_12px_rgba(0,0,0,0.1)] group-hover:shadow-[0_8px_30px_rgba(0,201,234,0.3)] transition-all">
           <img 
             src={posterUrl} 
             alt={movie.title || movie.original_title} 
-            className="movie-poster" 
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
             loading="lazy"
             onError={(e) => { e.target.onerror = null; e.target.src = "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=500&q=80"; }}
           />
-        </div>
-        
-        <div className="movie-details">
-          <h4 className="movie-title">{movie.title || movie.original_title}</h4>
-          <div className="movie-meta" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <span className="movie-year" style={{ fontSize: "1rem", color: "var(--text-color)" }}>{releaseYear}</span>
-              {movie.runtime && <span className="movie-runtime">{movie.runtime}</span>}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "1.2rem", fontWeight: "700", color: "var(--text-color)" }}>
-              <img src={Star} alt="Star" style={{ width: "20px", height: "20px" }} />
-              <span>{rating}</span>
-            </div>
+
+          {/* Top Right Rating Badge - Ratetastic Style */}
+          <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full flex items-center gap-1.5 z-10 border border-white/10 shadow-lg">
+            <span className="text-white text-xs font-black">★ {rating}</span>
           </div>
 
-          {movie.genres && movie.genres.length > 0 && (
-            <div className="movie-genres">
-              {movie.genres.slice(0, 2).map((g, i) => (
-                <span key={i} className="genre-tag">{g}</span>
-              ))}
+          {/* Action overlay */}
+          <div className="absolute inset-0 bg-black/60 flex-col justify-end p-4 gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-in-out z-20 flex">
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleAddToDraftPoll}
+                size="sm"
+                variant="secondary"
+                className="w-full font-bold shadow-sm text-black"
+              >
+                + Add
+              </Button>
             </div>
-          )}
-
-          <p className="movie-plot">
-            {movie.plot || movie.overview 
-              ? ((movie.plot || movie.overview).slice(0, 80) + "...") 
-              : "No description available."}
-          </p>
+            <div>
+              <Button 
+                onClick={handleCreateInstantPoll}
+                size="sm"
+                className="w-full font-bold shadow-md bg-[#00c9ea] text-slate-900 hover:bg-slate-900 hover:text-white"
+              >
+                Create Poll
+              </Button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Title and Date Below the Card */}
+        <div className="flex flex-col gap-0.5 w-full px-1 flex-grow">
+          <h4 className="font-bold text-base text-slate-900 group-hover:text-[#00c9ea] line-clamp-1 truncate transition-colors" title={movie.title || movie.original_title}>
+            {movie.title || movie.original_title}
+          </h4>
+          <span className="text-slate-500 font-semibold text-sm">{releaseYear}</span>
         </div>
       </Link>
-      
-      <div style={{ padding: "0 18px 18px 18px" }}>
-        <div className="movie-card-actions">
-          <button 
-            onClick={handleAddToDraftPoll}
-            className="btn btn-secondary btn-card-action"
-            title="Add to poll draft"
-          >
-            ➕ Add
-          </button>
-          <button 
-            onClick={handleCreateInstantPoll}
-            className="btn btn-primary btn-card-action"
-            title="Create instant poll with this movie"
-          >
-            ⚡ Poll
-          </button>
-        </div>
-      </div>
     </div>
   );
 };

@@ -27,7 +27,6 @@ const MovieList = ({ type, title }) => {
     setSort((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Local filtering and sorting to keep UI super fast
   let displayedMovies = [...movies];
   if (minRating > 0) {
     displayedMovies = displayedMovies.filter(
@@ -40,18 +39,18 @@ const MovieList = ({ type, title }) => {
 
   if (error) {
     return (
-      <div className="container" style={{ padding: "40px 0", color: "var(--danger-color)" }}>
-        <p>⚠️ Error: {error}</p>
+      <div className="container mx-auto px-4 md:px-6 py-10 text-destructive font-medium">
+        <p>Error: {error}</p>
       </div>
     );
   }
 
   return (
-    <section className="movie-list container" id={type}>
-      <header className="movie-list-header">
-        <h2 className="movie-list-heading">{title} 🔥</h2>
+    <section className="container mx-auto px-4 md:px-6 mb-16" id={type}>
+      <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight">{title}</h2>
 
-        <div className="movie-list-fs">
+        <div className="flex flex-wrap items-center gap-4">
           <FilterGroup 
             minRating={minRating} 
             onRatingClick={handleFilter}
@@ -60,7 +59,7 @@ const MovieList = ({ type, title }) => {
 
           <select 
             name="by" 
-            className="movie-sorting" 
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring" 
             onChange={handleSort} 
             value={sort.by}
           >
@@ -73,7 +72,7 @@ const MovieList = ({ type, title }) => {
             name="order" 
             value={sort.order} 
             onChange={handleSort} 
-            className="movie-sorting"
+            className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
             <option value="asc">Ascending</option>
             <option value="desc">Descending</option>
@@ -82,24 +81,23 @@ const MovieList = ({ type, title }) => {
       </header>
 
       {loading ? (
-        <div className="grid-responsive" style={{ marginTop: "24px" }}>
-          {[1, 2, 3, 4].map((n) => (
-            <div key={n} className="glass-panel" style={{ padding: "18px" }}>
-              <Skeleton type="poster" />
-              <Skeleton type="title" />
-              <Skeleton type="text" />
-              <Skeleton type="text" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 lg:gap-8">
+          {[1, 2, 3, 4, 5, 6].map((n) => (
+            <div key={n} className="flex flex-col gap-2">
+              <Skeleton type="movie-poster" className="rounded-2xl" />
+              <Skeleton type="text" className="w-3/4 mt-2" />
+              <Skeleton type="text" className="w-1/2" />
             </div>
           ))}
         </div>
       ) : (
-        <div className="grid-responsive" style={{ marginTop: "24px" }}>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 lg:gap-8">
           {displayedMovies.length > 0 ? (
             displayedMovies.map((movie) => (
               <MovieCard key={movie.id} movie={movie} />
             ))
           ) : (
-            <p style={{ gridColumn: "1/-1", textAlign: "center", color: "var(--text-muted)", padding: "40px" }}>
+            <p className="col-span-full text-center text-muted-foreground p-10">
               No movies match the selected filters.
             </p>
           )}

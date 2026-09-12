@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import "./AuthModal.css";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const AuthModal = () => {
   const { 
@@ -70,27 +72,22 @@ const AuthModal = () => {
   };
 
   return (
-    <div className="auth-modal-overlay" onClick={() => setAuthModalOpen(false)}>
-      <div className="auth-modal-content glass-panel" onClick={(e) => e.stopPropagation()}>
-        <button className="auth-modal-close" onClick={() => setAuthModalOpen(false)} aria-label="Close modal">
-          &times;
-        </button>
-
-        <h2 className="auth-modal-title">
-          {isSignUp ? "Create an Account" : "Welcome Back"}
-        </h2>
-        <p className="auth-modal-subtitle">
-          {isSignUp 
-            ? "Sign up to track, create, and share movie polls." 
-            : "Sign in to access your polls and settings."
-          }
-        </p>
-
-        <form onSubmit={handleSubmit} className="auth-modal-form">
+    <Dialog open={authModalOpen} onOpenChange={setAuthModalOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>{isSignUp ? "Create an Account" : "Welcome Back"}</DialogTitle>
+          <DialogDescription>
+            {isSignUp 
+              ? "Sign up to track, create, and share movie polls." 
+              : "Sign in to access your polls and settings."
+            }
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
           {isSignUp && (
-            <div className="form-group">
-              <label htmlFor="auth-username">Username</label>
-              <input
+            <div className="grid gap-2">
+              <label htmlFor="auth-username" className="text-sm font-medium">Username</label>
+              <Input
                 id="auth-username"
                 type="text"
                 required
@@ -101,10 +98,9 @@ const AuthModal = () => {
               />
             </div>
           )}
-
-          <div className="form-group">
-            <label htmlFor="auth-email">Email Address</label>
-            <input
+          <div className="grid gap-2">
+            <label htmlFor="auth-email" className="text-sm font-medium">Email Address</label>
+            <Input
               id="auth-email"
               type="email"
               required
@@ -114,10 +110,9 @@ const AuthModal = () => {
               disabled={loading}
             />
           </div>
-
-          <div className="form-group">
-            <label htmlFor="auth-password">Password</label>
-            <input
+          <div className="grid gap-2">
+            <label htmlFor="auth-password" className="text-sm font-medium">Password</label>
+            <Input
               id="auth-password"
               type="password"
               required
@@ -127,46 +122,47 @@ const AuthModal = () => {
               disabled={loading}
             />
           </div>
-
-          <button 
-            type="submit" 
-            className="btn btn-primary auth-submit-btn" 
-            disabled={loading}
-          >
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Processing..." : isSignUp ? "Sign Up" : "Sign In"}
-          </button>
+          </Button>
         </form>
 
-        <div className="auth-modal-divider">
-          <span>OR</span>
+        <div className="relative my-2">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">OR</span>
+          </div>
         </div>
 
-        <button 
+        <Button 
+          variant="outline"
           onClick={handleGoogleSignIn} 
-          className="btn btn-secondary auth-google-btn"
           disabled={loading}
+          className="w-full"
         >
           <img 
             src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
             alt="Google logo" 
-            className="google-logo-icon"
+            className="mr-2 h-4 w-4"
           />
           Continue with Google
-        </button>
+        </Button>
 
-        <p className="auth-modal-switch-text">
+        <div className="text-center text-sm text-muted-foreground mt-4">
           {isSignUp ? "Already have an account? " : "Don't have an account? "}
           <button 
             type="button" 
-            className="auth-modal-switch-btn"
+            className="underline underline-offset-4 hover:text-primary"
             onClick={() => setIsSignUp(!isSignUp)}
             disabled={loading}
           >
             {isSignUp ? "Sign In" : "Sign Up"}
           </button>
-        </p>
-      </div>
-    </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

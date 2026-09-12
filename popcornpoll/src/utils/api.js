@@ -58,12 +58,12 @@ const withLocalCache = async (cacheKey, fetchFn) => {
 /**
  * Fetch movie list from TMDB (popular, top_rated, upcoming, trending)
  */
-export const fetchTMDBMovies = async (type, page = 1) => {
-  const cacheKey = `tmdb_list_${type}_${page}`;
+export const fetchTMDBMovies = async (type, page = 1, region = "") => {
+  const cacheKey = `tmdb_list_${type}_${page}_${region}`;
   return withSessionCache(cacheKey, async () => {
-    let url = `${TMDB_BASE_URL}/movie/${type}?api_key=${TMDB_API_KEY}&page=${page}`;
+    let url = `${TMDB_BASE_URL}/movie/${type}?api_key=${TMDB_API_KEY}&page=${page}${region ? `&region=${region}` : ""}`;
     if (type === "trending") {
-      url = `${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}&page=${page}`;
+      url = `${TMDB_BASE_URL}/trending/movie/week?api_key=${TMDB_API_KEY}&page=${page}`; // Trending does not support region
     }
     const response = await fetch(url);
     if (!response.ok) throw new Error(`TMDB error: ${response.statusText}`);
@@ -73,13 +73,40 @@ export const fetchTMDBMovies = async (type, page = 1) => {
 };
 
 /**
+ * Discover movies natively by passing filters directly to TMDB (bypassing client-side limiting)
+ */
+export const discoverTMDBMovies = async (page = 1, filters = {}) => {
+  const { country, genreId, minRating, yearStart, yearEnd } = filters;
+  const cacheKey = `tmdb_discover_${page}_${country}_${genreId}_${minRating}_${yearStart}_${yearEnd}`;
+  return withSessionCache(cacheKey, async () => {
+    let url = `${TMDB_BASE_URL}/discover/movie?api_key=${TMDB_API_KEY}&page=${page}&sort_by=popularity.desc`;
+    
+    // TMDB discovers by 'with_origin_country' for native production origin
+    if (country) url += `&with_origin_country=${country}`; 
+    if (genreId) url += `&with_genres=${genreId}`;
+    
+    if (minRating && minRating !== "0") {
+      url += `&vote_average.gte=${minRating}&vote_count.gte=50`; 
+    }
+    
+    if (yearStart) url += `&primary_release_date.gte=${yearStart}-01-01`;
+    if (yearEnd) url += `&primary_release_date.lte=${yearEnd}-12-31`;
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Discover API failure");
+    const data = await response.json();
+    return data.results || [];
+  });
+};
+
+/**
  * Search movies via TMDB (perfect for autocomplete search)
  */
-export const searchTMDBMovies = async (query, page = 1) => {
+export const searchTMDBMovies = async (query, page = 1, region = "") => {
   if (!query) return [];
-  const cacheKey = `tmdb_search_${query.toLowerCase()}_${page}`;
+  const cacheKey = `tmdb_search_${query.toLowerCase()}_${page}_${region}`;
   return withSessionCache(cacheKey, async () => {
-    const url = `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}`;
+    const url = `${TMDB_BASE_URL}/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&page=${page}${region ? `&region=${region}` : ""}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error("Search API failure");
     const data = await response.json();

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import useMovies from "../hooks/useMovies";
 import MovieCard from "../Components/MovieList/MovieCard";
-import { Skeleton } from "../Components/UI/UIComponents";
+import { Skeleton } from "@/components/ui/skeleton";
 import { searchTMDBMovies } from "../utils/api";
+import { Button } from "@/components/ui/button";
 
 const Browse = () => {
   const { movies, genres, loading, error, getMovieList, searchMovies, setMovies } = useMovies();
@@ -12,6 +13,7 @@ const Browse = () => {
   
   // Advanced Filter state
   const [selectedGenre, setSelectedGenre] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
   const [minRating, setMinRating] = useState("0");
   const [yearStart, setYearStart] = useState("1990");
   const [yearEnd, setYearEnd] = useState(new Date().getFullYear().toString());
@@ -19,12 +21,10 @@ const Browse = () => {
   const debounceTimer = useRef(null);
   const searchRef = useRef(null);
 
-  // Fetch popular movies by default on mount
   useEffect(() => {
     getMovieList("popular");
   }, []);
 
-  // Handle autocomplete search suggestions
   useEffect(() => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
@@ -45,7 +45,6 @@ const Browse = () => {
     return () => clearTimeout(debounceTimer.current);
   }, [searchQuery]);
 
-  // Click outside listener for suggestions dropdown
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -85,9 +84,7 @@ const Browse = () => {
     });
   };
 
-  // Re-apply filters when filter states change
   const applyFilters = () => {
-    // Trigger search query with updated filters
     if (searchQuery.trim() !== "") {
       searchMovies(searchQuery, {
         genre: selectedGenre,
@@ -96,128 +93,110 @@ const Browse = () => {
         yearEnd
       });
     } else {
-      // If no query, apply filters to the standard list
-      getMovieList("popular").then(() => {
-        // Wait, hook update is asynchronous, so we handle it inside hook or local filter.
-      });
+      getMovieList("popular").then(() => {});
     }
   };
 
   useEffect(() => {
-    // If not searching, just apply local filters or re-fetch
+    const filters = {
+      genre: selectedGenre,
+      minRating: minRating !== "0" ? minRating : null,
+      yearStart,
+      yearEnd,
+      country: selectedCountry
+    };
+    
     if (searchQuery.trim() === "") {
-      // Refresh list
-      getMovieList("popular");
+      getMovieList("popular", filters);
     } else {
-      handleSearchSubmit();
+      searchMovies(searchQuery, filters);
     }
-  }, [selectedGenre, minRating, yearStart, yearEnd]);
+  }, [selectedGenre, minRating, yearStart, yearEnd, selectedCountry]);
 
   return (
-    <div className="container section-padding" style={{ minHeight: "80vh" }}>
-      <header style={{ marginBottom: "40px", textAlign: "center" }}>
-        <h1 style={{ fontSize: "2.5rem", marginBottom: "16px" }}>🔍 Find Movies & TV Shows</h1>
-        <p style={{ color: "var(--text-muted)", maxWidth: "600px", margin: "0 auto" }}>
+    <div className="min-h-screen bg-[#a6f3ff] pt-16 pb-32 px-6 relative overflow-hidden">
+      <div className="absolute top-20 right-[5%] rotate-[10deg] w-40 h-16 bg-[#ffea2a] rounded-full hidden md:block opacity-70 border border-black/10 mix-blend-multiply" />
+      <div className="absolute top-[40%] left-[10%] w-32 h-32 bg-[#b268f7] rounded-full hidden xl:block opacity-50 border border-black/10 mix-blend-multiply" />
+
+      <header className="max-w-4xl mx-auto text-center mb-12 relative z-10">
+        <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter mb-4">Find Movies & TV</h1>
+        <p className="text-xl text-slate-600 font-medium max-w-2xl mx-auto">
           Search for content to review ratings, cast details, and instantly add them to your polls.
         </p>
       </header>
 
       {/* Advanced Search Bar & Autocomplete */}
-      <div 
-        ref={searchRef} 
-        style={{ position: "relative", maxWidth: "680px", margin: "0 auto 40px auto" }}
-      >
-        <form onSubmit={handleSearchSubmit} className="align_center" style={{ gap: "10px" }}>
-          <div style={{ position: "relative", flex: 1 }}>
+      <div ref={searchRef} className="max-w-3xl mx-auto mb-10 relative z-20">
+        <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
             <input
               type="text"
-              placeholder="Search by title (e.g., Inception, Breaking Bad)..."
+              placeholder="Search by title (e.g., Inception)..."
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setShowSuggestions(true);
               }}
-              style={{
-                width: "100%",
-                padding: "14px 20px",
-                borderRadius: "12px",
-                border: "1px solid var(--border-color)",
-                background: "var(--input-bg)",
-                color: "var(--text-color)",
-                fontSize: "1rem"
-              }}
               onFocus={() => setShowSuggestions(true)}
+              className="w-full h-16 px-6 text-xl font-semibold rounded-[2rem] border-4 border-slate-900 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#00c9ea] shadow-[4px_4px_0_rgb(15,23,42)] transition-colors"
             />
             {showSuggestions && suggestions.length > 0 && (
-              <div 
-                className="glass-panel" 
-                style={{
-                  position: "absolute",
-                  top: "110%",
-                  left: 0,
-                  right: 0,
-                  zIndex: 10,
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                  boxShadow: "var(--shadow-lg)"
-                }}
-              >
+              <div className="absolute top-full mt-2 left-0 right-0 z-50 bg-white border-2 border-slate-200 rounded-[1rem] overflow-hidden shadow-2xl py-2">
                 {suggestions.map((movie) => (
                   <div
                     key={movie.id}
                     onClick={() => handleSuggestionClick(movie)}
-                    style={{
-                      padding: "12px 20px",
-                      cursor: "pointer",
-                      borderBottom: "1px solid var(--border-color)",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center"
-                    }}
-                    className="suggestion-item"
+                    className="px-6 py-3 cursor-pointer hover:bg-[#a6f3ff]/20 font-bold border-b border-slate-50 last:border-0 flex justify-between items-center transition-colors"
                   >
-                    <div>
-                      <span style={{ fontWeight: 600 }}>{movie.title}</span>
-                      <span style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginLeft: "10px" }}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg text-slate-900">{movie.title}</span>
+                      <span className="text-sm text-slate-400">
                         ({(movie.release_date || "").substring(0, 4)})
                       </span>
                     </div>
-                    <span style={{ fontSize: "0.8rem", color: "var(--primary-color)" }}>⭐ {movie.vote_average.toFixed(1)}</span>
+                    <span className="text-sm font-black text-[#00c9ea] border-2 border-[#00c9ea]/20 px-2 py-1 rounded-lg bg-[#a6f3ff]/10">{(movie.vote_average || 0).toFixed(1)} Rating</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
-          <button type="submit" className="btn btn-primary" style={{ padding: "14px 24px" }}>
+          <Button 
+            type="submit" 
+            size="lg"
+            className="h-16 px-10 rounded-[2rem] bg-black text-white hover:bg-slate-800 text-xl font-bold shadow-[4px_4px_0_rgb(15,23,42)] hover:shadow-none hover:translate-x-[4px] hover:translate-y-[4px] transition-all"
+          >
             Search
-          </button>
+          </Button>
         </form>
       </div>
 
       {/* Advanced Filter Panel */}
-      <div 
-        className="glass-panel" 
-        style={{ 
-          padding: "24px", 
-          marginBottom: "40px", 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", 
-          gap: "20px" 
-        }}
-      >
+      <div className="max-w-6xl mx-auto bg-white/95 backdrop-blur-xl p-8 rounded-[2rem] shadow-xl border border-white mb-12 relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6">
+        
+        {/* Country selector */}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-black text-slate-800 uppercase tracking-widest">Country</label>
+          <select 
+            value={selectedCountry} 
+            onChange={(e) => setSelectedCountry(e.target.value)}
+            className="h-14 px-4 text-base font-bold rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] transition-colors shadow-sm cursor-pointer"
+          >
+            <option value="">Global</option>
+            <option value="US">United States</option>
+            <option value="GB">United Kingdom</option>
+            <option value="IN">India</option>
+            <option value="JP">Japan</option>
+            <option value="KR">South Korea</option>
+          </select>
+        </div>
+        
         {/* Genre selector */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)" }}>GENRE</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-black text-slate-800 uppercase tracking-widest">Genre</label>
           <select 
             value={selectedGenre} 
             onChange={(e) => setSelectedGenre(e.target.value)}
-            style={{
-              padding: "10px 14px",
-              borderRadius: "8px",
-              background: "var(--input-bg)",
-              border: "1px solid var(--border-color)",
-              color: "var(--text-color)"
-            }}
+            className="h-14 px-4 text-base font-bold rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] transition-colors shadow-sm cursor-pointer"
           >
             <option value="">All Genres</option>
             {genres.map((g) => (
@@ -227,98 +206,83 @@ const Browse = () => {
         </div>
 
         {/* Min Rating selector */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)" }}>MIN IMDB RATING</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-black text-slate-800 uppercase tracking-widest">Min IMDb</label>
           <select 
             value={minRating} 
             onChange={(e) => setMinRating(e.target.value)}
-            style={{
-              padding: "10px 14px",
-              borderRadius: "8px",
-              background: "var(--input-bg)",
-              border: "1px solid var(--border-color)",
-              color: "var(--text-color)"
-            }}
+            className="h-14 px-4 text-base font-bold rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] transition-colors shadow-sm cursor-pointer"
           >
-            <option value="0">All Ratings</option>
-            <option value="6">6.0+ IMDb</option>
-            <option value="7">7.0+ IMDb</option>
-            <option value="8">8.0+ IMDb</option>
+            <option value="0">All</option>
+            <option value="6">6.0+</option>
+            <option value="7">7.0+</option>
+            <option value="8">8.0+</option>
           </select>
         </div>
 
         {/* Release Year start selector */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)" }}>RELEASE YEAR FROM</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-black text-slate-800 uppercase tracking-widest">From</label>
           <input
             type="number"
             min="1900"
             max={new Date().getFullYear().toString()}
             value={yearStart}
             onChange={(e) => setYearStart(e.target.value)}
-            style={{
-              padding: "10px 14px",
-              borderRadius: "8px",
-              background: "var(--input-bg)",
-              border: "1px solid var(--border-color)",
-              color: "var(--text-color)"
-            }}
+            className="h-14 px-4 text-base font-bold rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] transition-colors shadow-sm"
           />
         </div>
 
         {/* Release Year end selector */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <label style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-muted)" }}>RELEASE YEAR TO</label>
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-black text-slate-800 uppercase tracking-widest">To Year</label>
           <input
             type="number"
             min="1900"
             max={new Date().getFullYear().toString()}
             value={yearEnd}
             onChange={(e) => setYearEnd(e.target.value)}
-            style={{
-              padding: "10px 14px",
-              borderRadius: "8px",
-              background: "var(--input-bg)",
-              border: "1px solid var(--border-color)",
-              color: "var(--text-color)"
-            }}
+            className="h-14 px-4 text-base font-bold rounded-xl border-2 border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:border-[#00c9ea] transition-colors shadow-sm"
           />
         </div>
       </div>
 
       {/* Movie Grid */}
       {error && (
-        <div style={{ color: "var(--danger-color)", padding: "20px", textAlign: "center" }}>
-          <p>⚠️ {error}</p>
+        <div className="max-w-5xl mx-auto bg-red-100 border-2 border-red-500 rounded-2xl p-6 text-center text-red-700 font-bold text-lg mb-8 relative z-10">
+          Error: {error}
         </div>
       )}
 
-      {loading ? (
-        <div className="grid-responsive">
-          {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-            <div key={n} className="glass-panel" style={{ padding: "18px" }}>
-              <Skeleton type="poster" />
-              <Skeleton type="title" />
-              <Skeleton type="text" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div>
-          {movies.length > 0 ? (
-            <div className="grid-responsive">
-              {movies.map((movie) => (
-                <MovieCard key={movie.id} movie={movie} />
-              ))}
-            </div>
-          ) : (
-            <div style={{ textAlign: "center", padding: "60px", color: "var(--text-muted)" }}>
-              <p style={{ fontSize: "1.2rem", marginBottom: "10px" }}>🎬 No movies found</p>
-              <p>Try searching for a different title or resetting the advanced filters.</p>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="max-w-7xl mx-auto relative z-10">
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              <div key={n} className="flex flex-col gap-3">
+                <Skeleton className="w-full aspect-[2/3] rounded-2xl bg-white/40" />
+                <Skeleton className="h-6 w-3/4 bg-white/40" />
+                <Skeleton className="h-4 w-1/2 bg-white/40" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div>
+            {movies.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 lg:gap-8">
+                {movies.map((movie) => (
+                  <MovieCard key={movie.id} movie={movie} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-[2rem] border-2 border-white max-w-2xl mx-auto shadow-xl">
+                <div className="w-16 h-16 mx-auto bg-slate-200 rounded-full mb-4"></div>
+                <p className="text-2xl font-black text-slate-800 mb-2">No movies found</p>
+                <p className="text-lg text-slate-500 font-medium">Try searching for a different title or resetting the advanced filters.</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

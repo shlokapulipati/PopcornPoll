@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { 
   fetchTMDBMovies, 
   searchTMDBMovies, 
+  discoverTMDBMovies,
   fetchTMDBGenres, 
   enrichMoviesWithOMDB 
 } from "../utils/api";
@@ -26,14 +27,36 @@ export const useMovies = (initialType = "popular") => {
     getGenres();
   }, []);
 
-  // Fetch movie lists (TMDB basic info)
-  const getMovieList = async (listType) => {
+  // Fetch movie lists natively via Discover if filters active, otherwise basic popular endpoint
+  const getMovieList = async (listType, filters = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const basicMovies = await fetchTMDBMovies(listType);
-      // Enrich with detailed OMDB data (directors, genres, actual IMDb ratings)
+      const hasAdvancedFilters = filters.country || filters.genre || (filters.minRating && filters.minRating !== "0") || filters.yearStart !== "1990" || filters.yearEnd !== new Date().getFullYear().toString();
+      
+      let basicMovies = [];
+
+      if (hasAdvancedFilters) {
+         let genreId = null;
+         if (filters.genre && genres.length > 0) {
+           const match = genres.find(g => g.name.toLowerCase() === filters.genre.toLowerCase());
+           if (match) genreId = match.id;
+         }
+
+         basicMovies = await discoverTMDBMovies(1, {
+           country: filters.country,
+           genreId,
+           minRating: filters.minRating,
+           yearStart: filters.yearStart,
+           yearEnd: filters.yearEnd
+         });
+      } else {
+         basicMovies = await fetchTMDBMovies(listType, 1);
+      }
+
+      // Enrich with detailed OMDB data (directors, true IMDb ratings)
       const detailedMovies = await enrichMoviesWithOMDB(basicMovies);
+
       setMovies(detailedMovies);
       setType(listType);
     } catch (err) {
@@ -49,7 +72,7 @@ export const useMovies = (initialType = "popular") => {
     setLoading(true);
     setError(null);
     try {
-      const results = await searchTMDBMovies(query);
+      const results = await searchTMDBMovies(query, 1, filters.country || "");
       const detailedResults = await enrichMoviesWithOMDB(results);
       
       // Apply filters on the enriched list
